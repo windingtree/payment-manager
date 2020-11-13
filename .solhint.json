@@ -1,0 +1,18 @@
+{
+  "extends": "solhint:recommended",
+  "rules": {
+    "max-states-count": [
+      "warn",
+      21
+    ],
+    "var-name-mixedcase": "off",
+    "reason-string": [
+      "warn",
+      {
+        "maxLength": 128
+      }
+    ],
+    "not-rely-on-time": "off",
+    "avoid-low-level-calls": "off"
+  }
+}

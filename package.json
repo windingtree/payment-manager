@@ -1,0 +1,50 @@
+{
+  "name": "@windingtree/payment-manager",
+  "version": "0.1.0",
+  "description": "Smart contract for managing of crypto payments",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "ganache": "npx ganache-cli --gasLimit 0xfffffffffff -m --port 8545 --deterministic",
+    "build": "npx truffle compile"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/windingtree/payment-manager.git"
+  },
+  "keywords": [
+    "windingtree",
+    "smart",
+    "contract",
+    "solidity",
+    "crypto",
+    "payment",
+    "payment",
+    "uniswap",
+    "token",
+    "erc20",
+    "ethereum"
+  ],
+  "author": "Winding Tree Developers <dev@windingtree.com>",
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/windingtree/payment-manager/issues"
+  },
+  "homepage": "https://github.com/windingtree/payment-manager#readme",
+  "dependencies": {
+    "@openzeppelin/contracts": "3.2.0",
+    "@windingtree/smart-contracts-libraries": "0.1.4",
+    "@uniswap/v2-periphery": "1.1.0-beta.0"
+  },
+  "devDependencies": {
+    "@openzeppelin/test-helpers": "0.5.9",
+    "eslint": "7.13.0",
+    "solhint": "3.3.2",
+    "solc": "0.7.4",
+    "ganache-cli": "6.12.1",
+    "truffle": "5.1.52",
+    "@truffle/hdwallet-provider": "1.2.0",
+    "solidity-coverage": "0.7.11",
+    "coveralls": "3.1.0"
+  }
+}
