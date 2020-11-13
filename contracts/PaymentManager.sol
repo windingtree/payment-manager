@@ -163,7 +163,7 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
   function refund(
     uint256 index,
     bool refundStableCoin
-  ) external virtual override {
+  ) external virtual override onlyOwner {
     Payment storage payment = payments[index];
 
     require(
