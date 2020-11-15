@@ -4,7 +4,6 @@ pragma solidity 0.6.6;
 
 import "./PaymentManagerInterface.sol";
 import "@windingtree/smart-contracts-libraries/contracts/ERC165/ERC165Removable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -17,7 +16,7 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
  * Allowing pay in tokens which will be automatically converted
  * to the pre-defined stable coin using Uniswap exchange
  */
-contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, Initializable {
+contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializable {
   using SafeMath for uint256;
 
   enum Status {
@@ -36,6 +35,7 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
     string attachment; // Textual attachment (eq: offerId, orderId, or URI)
   }
 
+  address public manager;
   IUniswapV2Router02 public uniswap; // Uniswap instance
   IERC20 public stableCoin; // Stable coin instance
   address public wallet; // Payments manager account
@@ -43,14 +43,22 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
   mapping(address => uint256[]) public payerPayments; // Mapping of the payer address to his payments
 
   /**
+   * @dev Throws if called by any account other than the manager.
+   */
+  modifier onlyManager() {
+      require(manager == msg.sender, "PM: Caller is not the manager");
+      _;
+  }
+
+  /**
    * @dev Initializer for upgradeable contracts.
-   * @param _owner The trusted owner of this contract
+   * @param _manager The trusted manager of this contract
    * @param _uniswap Uniswap router instance
    * @param _stableCoin Base stablecoin token instance
    * @param _wallet Payments manager account
    */
   function initialize(
-    address _owner,
+    address _manager,
     IUniswapV2Router02 _uniswap,
     IERC20 _stableCoin,
     address _wallet
@@ -59,10 +67,22 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
     initializer
   {
     _setInterfaces();
-    transferOwnership(_owner);
+    manager = _manager;
     uniswap = _uniswap;
     stableCoin = _stableCoin;
     wallet = _wallet;
+  }
+
+  /**
+   * @dev Changes the manager of the contract
+   * @param _manager The manager address
+   */
+  function changeManager (address _manager)
+    external
+    override
+    onlyManager
+  {
+    manager = _manager;
   }
 
   /**
@@ -71,7 +91,8 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
    */
   function changeUniswap (IUniswapV2Router02 _uniswap)
     external
-    onlyOwner
+    override
+    onlyManager
   {
     uniswap = _uniswap;
   }
@@ -82,7 +103,8 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
    */
   function changeWallet (address _wallet)
     external
-    onlyOwner
+    override
+    onlyManager
   {
     wallet = _wallet;
   }
@@ -227,7 +249,7 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
     external
     virtual
     override
-    onlyOwner
+    onlyManager
   {
     Payment storage payment = payments[index];
 
@@ -361,11 +383,13 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
     PaymentManagerInterface p;
     bytes4[1] memory interfaceIds = [
       // payment interface:
+      p.changeManager.selector ^
+      p.changeUniswap.selector ^
+      p.changeWallet.selector ^
       p.getAmountIn.selector ^
       p.pay.selector ^
       p.payETH.selector ^
-      p.refund.selector ^
-      p.getPaymentsCount.selector
+      p.refund.selector
     ];
 
     for (uint256 i = 0; i < interfaceIds.length; i++) {

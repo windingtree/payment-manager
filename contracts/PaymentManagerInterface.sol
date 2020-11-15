@@ -3,6 +3,7 @@
 pragma solidity 0.6.6;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 
 /**
@@ -10,6 +11,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  *  @dev Interface for the PaymentManager contract
  */
 interface PaymentManagerInterface {
+  function changeManager (address _manager) external;
+  function changeUniswap (IUniswapV2Router02 _uniswap) external;
+  function changeWallet (address _wallet) external;
   function getAmountIn(
     uint256 amountOut,
     address tokenIn

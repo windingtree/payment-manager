@@ -60,6 +60,7 @@
     "coveralls": "3.1.0",
     "chai": "4.2.0",
     "bn-chai": "1.0.1",
-    "rimraf": "3.0.2"
+    "rimraf": "3.0.2",
+    "@windingtree/smart-contracts-tools": "0.1.1"
   }
 }
