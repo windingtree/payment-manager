@@ -1,0 +1,26 @@
+{
+  "manifestVersion": "2.2",
+  "contracts": {
+    "PaymentManager": "PaymentManager"
+  },
+  "dependencies": {},
+  "name": "payment-manager",
+  "version": "0.1.0",
+  "publish": true,
+  "compiler": {
+    "manager": "openzeppelin",
+    "compilerSettings": {
+      "optimizer": {
+        "enabled": true,
+        "runs": "200"
+      }
+    },
+    "solcVersion": "0.6.6",
+    "artifactsDir": "build/contracts",
+    "contractsDir": "contracts",
+    "typechain": {
+      "enabled": false
+    }
+  },
+  "telemetryOptIn": false
+}
