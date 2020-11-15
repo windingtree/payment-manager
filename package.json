@@ -2,6 +2,9 @@
   "name": "@windingtree/payment-manager",
   "version": "0.1.1",
   "description": "Smart contract for managing of crypto payments",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "index.js",
   "scripts": {
     "clean": "rimraf build",
