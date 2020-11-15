@@ -13,8 +13,11 @@ Import ABI in the your JavaScript code:
 
 ```javascript
 const {
-  PaymentManager
+  PaymentManagerContract,
+  PaymentManagerInterfaceContract,
+  addresses
 } = require('@windingtree/payment-manager');
 
-// PaymentManager.abi <-- ABI
+// PaymentManagerContract.abi <-- ABI
+// addresses.PaymentManager.ropsten <-- Address of the deployed PaymentManager
 ```

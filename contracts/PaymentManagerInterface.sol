@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  *  @title PaymentManagerInterface
- *  @dev ""
+ *  @dev Interface for the PaymentManager contract
  */
 interface PaymentManagerInterface {
   function getAmountIn(
