@@ -21,11 +21,22 @@ interface PaymentManagerInterface {
     uint256 deadline,
     string calldata attachment
   ) external;
-  function payEth(
+  function payETH(
     uint256 amountOut,
     uint256 deadline,
     string calldata attachment
   ) external payable;
   function refund(uint256 index, bool refundStableCoin) external;
-  function withdraw(uint256 amount, address to) external;
+  function getPaymentsCount() external view returns (uint256);
+  /**
+   * @dev The event triggered when payment is done
+   * @param index Payment index
+   */
+  event Paid(uint256 index);
+
+  /**
+   * @dev The event triggered when payment is refunded
+   * @param index Payment index
+   */
+  event Refunded(uint256 index);
 }

@@ -7,6 +7,7 @@ import "@windingtree/smart-contracts-libraries/contracts/ERC165/ERC165Removable.
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 
@@ -17,6 +18,7 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
  * to the pre-defined stable coin using Uniswap exchange
  */
 contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, Initializable {
+  using SafeMath for uint256;
 
   enum Status {
     Paid,
@@ -36,34 +38,53 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
 
   IUniswapV2Router02 public uniswap; // Uniswap instance
   IERC20 public stableCoin; // Stable coin instance
+  address public wallet; // Payments manager account
   Payment[] public payments; // All payments list
   mapping(address => uint256[]) public payerPayments; // Mapping of the payer address to his payments
 
   /**
-   * @dev The event triggered when payment is done
-   * @param index Payment index
-   */
-  event Paid(uint256 index);
-
-  /**
-   * @dev The event triggered when payment is refunded
-   * @param index Payment index
-   */
-  event Refunded(uint256 index);
-
-  /**
-   *  @dev Initializer for upgradeable contracts.
-   *  @param _owner The trusted owner of this contract.
+   * @dev Initializer for upgradeable contracts.
+   * @param _owner The trusted owner of this contract
+   * @param _uniswap Uniswap router instance
+   * @param _stableCoin Base stablecoin token instance
+   * @param _wallet Payments manager account
    */
   function initialize(
     address _owner,
     IUniswapV2Router02 _uniswap,
-    IERC20 _stableCoin
-  ) public initializer {
+    IERC20 _stableCoin,
+    address _wallet
+  )
+    public
+    initializer
+  {
     _setInterfaces();
     transferOwnership(_owner);
     uniswap = _uniswap;
     stableCoin = _stableCoin;
+    wallet = _wallet;
+  }
+
+  /**
+   * @dev Changes the Uniswap router instance
+   * @param _uniswap Uniswap router instance
+   */
+  function changeUniswap (IUniswapV2Router02 _uniswap)
+    external
+    onlyOwner
+  {
+    uniswap = _uniswap;
+  }
+
+  /**
+   * @dev Changes the manager wallet address
+   * @param _wallet Manager wallet address
+   */
+  function changeWallet (address _wallet)
+    external
+    onlyOwner
+  {
+    wallet = _wallet;
   }
 
   /**
@@ -75,7 +96,13 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
   function getAmountIn(
     uint256 amountOut,
     address tokenIn
-  ) public view virtual override returns (uint256 amount) {
+  )
+    public
+    view
+    virtual
+    override
+    returns (uint256 amount)
+  {
     address[] memory path = _buildPath(tokenIn, address(stableCoin));
     amount = uniswap.getAmountsIn(amountOut, path)[0];
   }
@@ -94,14 +121,22 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
     IERC20 tokenIn,
     uint256 deadline,
     string calldata attachment
-  ) external virtual override {
+  )
+    external
+    virtual
+    override
+  {
     require(
-      tokenIn.allowance(msg.sender, address(uniswap)) >= amountIn,
+      tokenIn.allowance(msg.sender, address(this)) >= amountIn,
       "PM: Tokens not approved"
     );
     require(
       getAmountIn(amountOut, address(tokenIn)) <= amountIn,
       "PM: Estimation has increased"
+    );
+    require(
+      tokenIn.transferFrom(msg.sender, address(this), amountIn),
+      "PM: Transfer of tokens failed"
     );
 
     _registerPayment(
@@ -112,13 +147,24 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
       attachment
     );
 
-    uniswap.swapTokensForExactTokens(
+    tokenIn.approve(address(uniswap), amountIn);
+    uint256[] memory amounts = uniswap.swapTokensForExactTokens(
       amountOut,
       amountIn,
       _buildPath(address(tokenIn), address(stableCoin)),
-      address(this),
+      wallet,
       deadline
     );
+
+    uint256 restTokensIn = amountIn.sub(amounts[0]);
+
+    // Send rest of tokens back
+    if (restTokensIn > 0) {
+      require(
+        tokenIn.transfer(msg.sender, restTokensIn),
+        "PM: Tokens transfer failed"
+      );
+    }
   }
 
   /**
@@ -127,11 +173,16 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
    * @param deadline Time after which transaction will be reverted if not succeeded
    * @param attachment Textual attachment to the payment
    */
-  function payEth(
+  function payETH(
     uint256 amountOut,
     uint256 deadline,
     string calldata attachment
-  ) external virtual override payable {
+  )
+    external
+    virtual
+    override
+    payable
+  {
     address weth = uniswap.WETH();
 
     require(
@@ -147,12 +198,21 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
       attachment
     );
 
-    uniswap.swapETHForExactTokens(
+    uint256[] memory amounts = uniswap.swapETHForExactTokens{value: msg.value}(
       amountOut,
       _buildPath(weth, address(stableCoin)),
-      address(this),
+      wallet,
       deadline
     );
+
+    // Send rest of msg.value back if exists
+    if (msg.value > amounts[0]) {
+      (bool success,) = msg.sender.call{value: msg.value.sub(amounts[0])}(new bytes(0));
+      require(
+        success,
+        "PM: ETH transfer filed"
+      );
+    }
   }
 
   /**
@@ -163,7 +223,12 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
   function refund(
     uint256 index,
     bool refundStableCoin
-  ) external virtual override onlyOwner {
+  )
+    external
+    virtual
+    override
+    onlyOwner
+  {
     Payment storage payment = payments[index];
 
     require(
@@ -174,13 +239,17 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
       payment.status != Status.Refunded,
       "PM: Payment has already been refunded"
     );
+    require(
+      stableCoin.balanceOf(address(this)) >= payment.amountOut,
+      "PM: Insufficient funds"
+    );
 
     payment.status = Status.Refunded;
     emit Refunded(index);
 
     if (refundStableCoin) {
       require(
-        stableCoin.transfer(payment.payer, payment.amountOut),
+        stableCoin.transferFrom(address(this), payment.payer, payment.amountOut),
         "PM: Unable to transfer refunded funds"
       );
     } else {
@@ -189,7 +258,8 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
         payment.amountOut,
         path
       )[path.length - 1]; // The last path position
-      uint256 deadline = block.timestamp + 43200; // @todo How to calculate this deadline? Currently just adds 12 hours
+      uint256 deadline = block.timestamp + 1800; // +30 min
+      stableCoin.approve(address(uniswap), payment.amountOut);
 
       if (payment.isEther) {
         uniswap.swapExactTokensForETH(
@@ -212,22 +282,17 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
   }
 
   /**
-   * @dev Make funds withdrawal
-   * @param amount Amount of stable coins to withdraw
-   * @param to Recipient address
+   * @dev Returns total count of payments
+   * @return uint256
    */
-  function withdraw(
-    uint256 amount,
-    address to
-  ) external virtual override onlyOwner {
-    require(
-      stableCoin.balanceOf(address(this)) >= amount,
-      "PM: Insufficient funds"
-    );
-    require(
-      stableCoin.transfer(to, amount),
-      "PM: Unable to transfer withdrawn funds"
-    );
+  function getPaymentsCount()
+    public
+    view
+    virtual
+    override
+    returns (uint256)
+  {
+    return payments.length;
   }
 
   /**
@@ -268,16 +333,23 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
   function _buildPath(
     address tokenIn,
     address tokenOut
-  ) internal view returns (address[] memory path) {
+  )
+    internal
+    view
+    returns (address[] memory path)
+  {
     address weth = uniswap.WETH();
-    path = new address[](tokenIn == weth ? 2 : 3);
+    path = new address[](tokenIn == weth || tokenOut == weth ? 2 : 3);
 
     if (tokenIn == weth) {
       path[0] = tokenIn;
       path[1] = tokenOut;
+    } else if (tokenOut == weth) {
+      path[0] = tokenIn;
+      path[1] = tokenOut;
     } else {
-      path[0] = weth;
-      path[1] = tokenIn;
+      path[0] = tokenIn;
+      path[1] = weth;
       path[2] = tokenOut;
     }
   }
@@ -291,7 +363,9 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Ownable, In
       // payment interface:
       p.getAmountIn.selector ^
       p.pay.selector ^
-      p.payEth.selector
+      p.payETH.selector ^
+      p.refund.selector ^
+      p.getPaymentsCount.selector
     ];
 
     for (uint256 i = 0; i < interfaceIds.length; i++) {
