@@ -27,15 +27,15 @@ Successful deployment creates a configuration file in `.openzeppelin` directory.
 
 ```json
 {
-  "version": "0.1.2",
+  "version": "0.1.3",
   "contract": {
     "name": "PaymentManager",
-    "implementation": "0xC89Ce4735882C9F0f0FE26686c53074E09B0D550",
-    "proxy": "0xD833215cBcc3f914bD1C9ece3EE7BF8B14f841bb"
+    "implementation": "0x123bFa1F55e11785e102c7a769F583357d027eFE",
+    "proxy": "0x85a51aF0f15c11720c4D31A310bFE78bD6CbaFf9"
   },
-  "owner": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1",
-  "proxyAdmin": "0x254dffcd3277C0b1660F6d42EFbB754edaBAbC2B",
-  "blockNumber": 10362794
+  "owner": "0xA0B74BFE28223c9e08d6DBFa74B5bf4Da763f959",
+  "proxyAdmin": "0xF59287AD02c59D09CfA0EB96Bc2c7e20a45069F7",
+  "blockNumber": 9081917
 }
 ```
 
