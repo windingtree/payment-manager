@@ -41,8 +41,6 @@ else
   start_ganache
 fi
 
-# NODE_ENV=test npx truffle compile --all
-
 if [ "$SOLIDITY_COVERAGE" = true ]; then
   npx truffle run coverage
 

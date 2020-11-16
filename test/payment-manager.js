@@ -188,6 +188,30 @@ contract('PaymentManager', accounts => {
       (payment.isEther).should.be.false;
       (payment.attachment).should.equal(attachment);
     });
+
+    it('should make a payment with stablecoin', async () => {
+      await tokens.USDC.approve(pm.address, amountUSDC, { from: payer });
+      const paymentIndex = await pm.getPaymentsCount();
+
+      const receipt = await pm.pay(
+        amountUSDC,
+        amountUSDC,
+        tokens.USDC.address,
+        Math.ceil(Date.now() / 1000) + 300,
+        attachment,
+        {
+          from: payer
+        }
+      );
+
+      expectEvent(
+        receipt,
+        'Paid',
+        {
+          index: paymentIndex
+        }
+      );
+    });
   });
 
   describe('#payETH(uint256,uint256,string)', () => {
@@ -392,6 +416,45 @@ contract('PaymentManager', accounts => {
           }
         ),
         'PM: Payment has already been refunded'
+      );
+    });
+
+    it('should refund stablecoin tokens if payment has been made with stablecoin', async () => {
+      await tokens.USDC.approve(pm.address, amountUSDC, { from: payer });
+      const receipt = await pm.pay(
+        amountUSDC,
+        amountUSDC,
+        tokens.USDC.address,
+        Math.ceil(Date.now() / 1000) + 300,
+        attachment,
+        {
+          from: payer
+        }
+      );
+      const paymentIndex = receipt.logs[0].args.index;
+
+      await tokens.USDC.transfer(
+        pm.address,
+        amountUSDC,
+        {
+          from: managerWallet
+        }
+      );
+
+      const refundReceipt = await pm.refund(
+        paymentIndex,
+        false,
+        {
+          from: pmOwner
+        }
+      );
+
+      expectEvent(
+        refundReceipt,
+        'Refunded',
+        {
+          index: paymentIndex
+        }
       );
     });
   });

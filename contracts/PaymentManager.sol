@@ -125,8 +125,12 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
     override
     returns (uint256 amount)
   {
-    address[] memory path = _buildPath(tokenIn, address(stableCoin));
-    amount = uniswap.getAmountsIn(amountOut, path)[0];
+    if (address(tokenIn) == address(stableCoin)) {
+      return amountOut;
+    } else {
+      address[] memory path = _buildPath(tokenIn, address(stableCoin));
+      amount = uniswap.getAmountsIn(amountOut, path)[0];
+    }
   }
 
   /**
@@ -152,14 +156,6 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
       tokenIn.allowance(msg.sender, address(this)) >= amountIn,
       "PM: Tokens not approved"
     );
-    require(
-      getAmountIn(amountOut, address(tokenIn)) <= amountIn,
-      "PM: Estimation has increased"
-    );
-    require(
-      tokenIn.transferFrom(msg.sender, address(this), amountIn),
-      "PM: Transfer of tokens failed"
-    );
 
     _registerPayment(
       address(tokenIn),
@@ -169,23 +165,43 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
       attachment
     );
 
-    tokenIn.approve(address(uniswap), amountIn);
-    uint256[] memory amounts = uniswap.swapTokensForExactTokens(
-      amountOut,
-      amountIn,
-      _buildPath(address(tokenIn), address(stableCoin)),
-      wallet,
-      deadline
-    );
-
-    uint256 restTokensIn = amountIn.sub(amounts[0]);
-
-    // Send rest of tokens back
-    if (restTokensIn > 0) {
+    if (address(tokenIn) == address(stableCoin)) {
       require(
-        tokenIn.transfer(msg.sender, restTokensIn),
+        amountIn == amountOut,
+        "PM: Amounts not equal"
+      );
+      require(
+        tokenIn.transferFrom(msg.sender, wallet, amountIn),
         "PM: Tokens transfer failed"
       );
+    } else {
+      require(
+        getAmountIn(amountOut, address(tokenIn)) <= amountIn,
+        "PM: Estimation has increased"
+      );
+      require(
+        tokenIn.transferFrom(msg.sender, address(this), amountIn),
+        "PM: Transfer of tokens failed"
+      );
+
+      tokenIn.approve(address(uniswap), amountIn);
+      uint256[] memory amounts = uniswap.swapTokensForExactTokens(
+        amountOut,
+        amountIn,
+        _buildPath(address(tokenIn), address(stableCoin)),
+        wallet,
+        deadline
+      );
+
+      uint256 restTokensIn = amountIn.sub(amounts[0]);
+
+      // Send rest of tokens back
+      if (restTokensIn > 0) {
+        require(
+          tokenIn.transfer(msg.sender, restTokensIn),
+          "PM: Tokens transfer failed"
+        );
+      }
     }
   }
 
@@ -269,9 +285,9 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
     payment.status = Status.Refunded;
     emit Refunded(index);
 
-    if (refundStableCoin) {
+    if (refundStableCoin || payment.tokenIn == address(stableCoin)) {
       require(
-        stableCoin.transferFrom(address(this), payment.payer, payment.amountOut),
+        stableCoin.transfer(payment.payer, payment.amountOut),
         "PM: Unable to transfer refunded funds"
       );
     } else {
