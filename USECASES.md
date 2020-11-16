@@ -153,6 +153,8 @@ The function call will be reverted in the following cases:
 
 During the payment, tokens conversion quote can be changed in a negative direction. In that case, the rest of the tokens after conversion will be sent to the payer.
 
+If payment made with stablecoin tokens then these tokens will be sent without the Uniswap usage.
+
 ### As a payer, I want to make a payment using ETH
 
 - function: `payETH(uint256,uint256,string)`
