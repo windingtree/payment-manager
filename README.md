@@ -1,3 +1,5 @@
+![Node.js Package](https://github.com/windingtree/payment-manager/workflows/Node.js%20Package/badge.svg)
+
 # payment-manager
 Smart contract for managing of crypto payments
 
