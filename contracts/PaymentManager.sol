@@ -14,7 +14,7 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
  * @title PaymentManager
  * @dev Payment manager class.
  * Allowing pay in tokens which will be automatically converted
- * to the pre-defined stable coin using Uniswap exchange
+ * to the pre-defined stablecoin using Uniswap exchange
  */
 contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializable {
   using SafeMath for uint256;
@@ -111,7 +111,7 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
 
   /**
    * @dev Calculates the required amount of tokens to be paid
-   * @param amountOut Amount to be paid in stable coins
+   * @param amountOut Amount to be paid in stablecoins
    * @param tokenIn The token provided by the payer
    * @return amount Amount of payers tokens that should be provided for payment
    */
@@ -135,7 +135,7 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
 
   /**
    * @dev Make payment with tokens
-   * @param amountOut Amount to be paid in stable coins
+   * @param amountOut Amount to be paid in stablecoins
    * @param amountIn Amount to pay in payer tokens
    * @param tokenIn The token provided by the payer
    * @param deadline Time after which transaction will be reverted if not succeeded
@@ -207,7 +207,7 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
 
   /**
    * @dev Make payment with Ether
-   * @param amountOut Amount to be paid in stable coins
+   * @param amountOut Amount to be paid in stablecoins
    * @param deadline Time after which transaction will be reverted if not succeeded
    * @param attachment Textual attachment to the payment
    */
@@ -256,7 +256,7 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
   /**
    * @dev Make payment refund
    * @param index Index of the payment
-   * @param refundStableCoin A flag which allows refunding in stable coins
+   * @param refundStableCoin A flag which allows refunding in stablecoins
    */
   function refund(
     uint256 index,
@@ -337,7 +337,7 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
    * @dev Registering of payment and emits an event
    * @param tokenIn An address of the token to start from
    * @param amountIn Amount of payers tokens
-   * @param amountOut Amount of stable coins to be paid
+   * @param amountOut Amount of stablecoins to be paid
    * @param isEther Is payer pays by the Ether
    * @param attachment Textual attachment to the payment
    */
