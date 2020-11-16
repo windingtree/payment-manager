@@ -77,7 +77,7 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
    * @dev Changes the manager of the contract
    * @param _manager The manager address
    */
-  function changeManager (address _manager)
+  function changeManager(address _manager)
     external
     override
     onlyManager
@@ -89,7 +89,7 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
    * @dev Changes the Uniswap router instance
    * @param _uniswap Uniswap router instance
    */
-  function changeUniswap (IUniswapV2Router02 _uniswap)
+  function changeUniswap(IUniswapV2Router02 _uniswap)
     external
     override
     onlyManager
@@ -101,7 +101,7 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
    * @dev Changes the manager wallet address
    * @param _wallet Manager wallet address
    */
-  function changeWallet (address _wallet)
+  function changeWallet(address _wallet)
     external
     override
     onlyManager

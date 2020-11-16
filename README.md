@@ -1,6 +1,10 @@
 # payment-manager
 Smart contract for managing of crypto payments
 
+## Use cases
+
+See use cases description and implementation in terms of the PaymentManager smart contract [here](./USECASES.md).
+
 ## Contract ABI
 
 Install the package:
