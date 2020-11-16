@@ -1,6 +1,6 @@
 {
   "name": "@windingtree/payment-manager",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Smart contract for managing of crypto payments",
   "publishConfig": {
     "access": "public"
