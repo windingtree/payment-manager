@@ -1,11 +1,11 @@
 {
-  "version": "0.3.0",
+  "version": "0.3.2",
   "contract": {
     "name": "PaymentManager",
-    "implementation": "0x9ba896363472e0c8041A3669D935B4D65806463D",
-    "proxy": "0xc90c6f02bE1A677F36463903c8E31D9483170598"
+    "implementation": "0x54ffec25694a0A17F5722e1fD74530d0f88bB43b",
+    "proxy": "0xFb5F0b76329fc6cf09b4E5ecF7B23227320689dF"
   },
   "owner": "0xA0B74BFE28223c9e08d6DBFa74B5bf4Da763f959",
-  "proxyAdmin": "0xe76Aaf148E7B543C0e35ef1E516A39Fc08E5e801",
-  "blockNumber": 9089585
+  "proxyAdmin": "0xf47c896d6Ab5141b74BDa49cbF3913C9c92A395f",
+  "blockNumber": 9090296
 }
