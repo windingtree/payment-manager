@@ -27,15 +27,15 @@ Successful deployment creates a configuration file in `.openzeppelin` directory.
 
 ```json
 {
-  "version": "0.1.3",
+  "version": "0.3.0",
   "contract": {
     "name": "PaymentManager",
-    "implementation": "0x123bFa1F55e11785e102c7a769F583357d027eFE",
-    "proxy": "0x85a51aF0f15c11720c4D31A310bFE78bD6CbaFf9"
+    "implementation": "0x9ba896363472e0c8041A3669D935B4D65806463D",
+    "proxy": "0xc90c6f02bE1A677F36463903c8E31D9483170598"
   },
   "owner": "0xA0B74BFE28223c9e08d6DBFa74B5bf4Da763f959",
-  "proxyAdmin": "0xF59287AD02c59D09CfA0EB96Bc2c7e20a45069F7",
-  "blockNumber": 9081917
+  "proxyAdmin": "0xe76Aaf148E7B543C0e35ef1E516A39Fc08E5e801",
+  "blockNumber": 9089585
 }
 ```
 
@@ -54,6 +54,14 @@ npx tools --network <network> cmd=upgrade name=PaymentManager from=<owner_addres
 As a result of the successful upgrade, the existing configuration file will be overridden by the new configuration.
 
 ## Manager
+
+### As a manager, I want to change OrgId address
+
+- function: `changeOrgId(address)`
+- arguments:
+  - `address`: An address of the OrgId instance
+
+The function call is restricted to be used by the manager only.
 
 ### As a manager, I want to transfer ownership of the role to another address
 
@@ -101,6 +109,7 @@ The data returned with the function call represents the payment structure:
 - `tokenOut`(`address`): Address of the target token (actually it is a stableCoin)
 - `amountOut`(`uint256`): Amount paid by the payer in target tokens
 - `payer`(`address`): Address of the payer
+- `merchant`(`bytes32`): The merchant organization Id
 - `isEther`(`bool`): Is payer has paid with ETH
 - `attachment`(`string`): Textual attachment (eq: offerId, orderId, or URI)
 
@@ -136,13 +145,14 @@ This function is using a token conversion feature of the Uniswap router contract
 
 ### As a payer, I want to make a payment using ERC20 token
 
-- function: `pay(uint256,uint256,address,uint256,string)`
+- function: `pay(uint256,uint256,address,uint256,string,bytes32)`
 - arguments:
   - `uint256`: The amount of stablecoin to be paid
   - `uint256`: The amount of payers tokens that should be used for payment
   - `address`: An address of the payers token
   - `uint256`: The deadline. The time after which a transaction will be reverted
   - `string`: Textual attachment to the payment
+  - `bytes32`: The merchant organization address
 
 Before the call of this function, the payer has to approve spending of his tokens for the PaymentManage contract.
 
@@ -157,11 +167,12 @@ If payment made with stablecoin tokens then these tokens will be sent without th
 
 ### As a payer, I want to make a payment using ETH
 
-- function: `payETH(uint256,uint256,string)`
+- function: `payETH(uint256,uint256,string,bytes32)`
 - arguments:
   - `uint256`: The amount of stablecoin to be paid
   - `uint256`: The deadline. The time after which a transaction will be reverted
   - `string`: Textual attachment to the payment
+  - `bytes32`: The merchant organization address
 
 This function behaviour is the same as at a `pay` function.
 
