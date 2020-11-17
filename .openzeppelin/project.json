@@ -1,8 +1,7 @@
 {
   "manifestVersion": "2.2",
   "contracts": {
-    "PaymentManager": "PaymentManager",
-    "PaymentManagerInterface": "PaymentManagerInterface"
+    "PaymentManager": "PaymentManager"
   },
   "dependencies": {},
   "name": "payment-manager",
