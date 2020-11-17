@@ -4,6 +4,7 @@ pragma solidity 0.6.6;
 
 import "./PaymentManagerInterface.sol";
 import "@windingtree/smart-contracts-libraries/contracts/ERC165/ERC165Removable.sol";
+import "./OrgIdInterface.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -31,13 +32,15 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
     address tokenOut; // Address of the target token (actually it is a stableCoin)
     uint256 amountOut; // Amount paid by the payer in target tokens
     address payer; // Address of the payer
+    bytes32 merchant; // ORGiD of the merchant
     bool isEther; // Is payer has paid with ETH
     string attachment; // Textual attachment (eq: offerId, orderId, or URI)
   }
 
-  address public manager;
+  OrgIdInterface orgId; // OrgId instance
   IUniswapV2Router02 public uniswap; // Uniswap instance
   IERC20 public stableCoin; // Stable coin instance
+  address public manager;
   address public wallet; // Payments manager account
   Payment[] public payments; // All payments list
   mapping(address => uint256[]) public payerPayments; // Mapping of the payer address to his payments
@@ -50,18 +53,31 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
       _;
   }
 
+  modifier withMerchant(bytes32 merchant) {
+    (
+      bool exists,,,,,,,,, bool isActive,
+    ) = orgId.getOrganization(merchant);
+    require(
+      exists && isActive,
+      "PM: Merchant organization not exists or disabled"
+    );
+    _;
+  }
+
   /**
    * @dev Initializer for upgradeable contracts.
    * @param _manager The trusted manager of this contract
    * @param _uniswap Uniswap router instance
    * @param _stableCoin Base stablecoin token instance
    * @param _wallet Payments manager account
+   * @param _orgId An instance of the OrgId
    */
   function initialize(
     address _manager,
     IUniswapV2Router02 _uniswap,
     IERC20 _stableCoin,
-    address _wallet
+    address _wallet,
+    OrgIdInterface _orgId
   )
     public
     initializer
@@ -71,6 +87,19 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
     uniswap = _uniswap;
     stableCoin = _stableCoin;
     wallet = _wallet;
+    orgId = _orgId;
+  }
+
+  /**
+   * @dev Changes the ORGiD instance
+   * @param _orgId The manager address
+   */
+  function changeOrgId(OrgIdInterface _orgId)
+    external
+    override
+    onlyManager
+  {
+    orgId = _orgId;
   }
 
   /**
@@ -140,17 +169,20 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
    * @param tokenIn The token provided by the payer
    * @param deadline Time after which transaction will be reverted if not succeeded
    * @param attachment Textual attachment to the payment
+   * @param merchant The ORGiD of the merchant organization
    */
   function pay(
     uint256 amountOut,
     uint256 amountIn,
     IERC20 tokenIn,
     uint256 deadline,
-    string calldata attachment
+    string calldata attachment,
+    bytes32 merchant
   )
     external
     virtual
     override
+    withMerchant(merchant)
   {
     require(
       tokenIn.allowance(msg.sender, address(this)) >= amountIn,
@@ -162,7 +194,8 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
       amountIn,
       amountOut,
       false,
-      attachment
+      attachment,
+      merchant
     );
 
     if (address(tokenIn) == address(stableCoin)) {
@@ -210,16 +243,19 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
    * @param amountOut Amount to be paid in stablecoins
    * @param deadline Time after which transaction will be reverted if not succeeded
    * @param attachment Textual attachment to the payment
+   * @param merchant The ORGiD of the merchant organization
    */
   function payETH(
     uint256 amountOut,
     uint256 deadline,
-    string calldata attachment
+    string calldata attachment,
+    bytes32 merchant
   )
     external
     virtual
     override
     payable
+    withMerchant(merchant)
   {
     address weth = uniswap.WETH();
 
@@ -233,7 +269,8 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
       msg.value,
       amountOut,
       true,
-      attachment
+      attachment,
+      merchant
     );
 
     uint256[] memory amounts = uniswap.swapETHForExactTokens{value: msg.value}(
@@ -340,13 +377,15 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
    * @param amountOut Amount of stablecoins to be paid
    * @param isEther Is payer pays by the Ether
    * @param attachment Textual attachment to the payment
+   * @param merchant The ORGiD of the merchant organization
    */
   function _registerPayment(
     address tokenIn,
     uint256 amountIn,
     uint256 amountOut,
     bool isEther,
-    string memory attachment
+    string memory attachment,
+    bytes32 merchant
   ) internal {
     emit Paid(payments.length);
     payerPayments[msg.sender].push(payments.length);
@@ -357,6 +396,7 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
       address(stableCoin),
       amountOut,
       msg.sender,
+      merchant,
       isEther,
       attachment
     ));
@@ -399,6 +439,7 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
     PaymentManagerInterface p;
     bytes4[1] memory interfaceIds = [
       // payment interface:
+      p.changeOrgId.selector ^
       p.changeManager.selector ^
       p.changeUniswap.selector ^
       p.changeWallet.selector ^

@@ -9,6 +9,9 @@ const {
 const {
   setupUniswap
 } = require('./utils/uniswap-factory');
+const {
+  setupOrgId
+} = require('./utils/orgId');
 const PaymentManager = artifacts.require('PaymentManager');
 
 require('chai')
@@ -26,11 +29,13 @@ contract('PaymentManager', accounts => {
     uniswapOwner,
     pmOwner,
     managerWallet,
+    orgIdOwner,
     payer
   ] =  accounts;
   let weth;
   let tokens;
   let uniswap;
+  let orgId;
   let pm;
 
   before(async () => {
@@ -104,6 +109,8 @@ contract('PaymentManager', accounts => {
       }
     );
 
+    orgId = await setupOrgId(orgIdOwner);
+
     pm = await PaymentManager.new({
       from: pmOwner
     });
@@ -112,6 +119,7 @@ contract('PaymentManager', accounts => {
       uniswap.router.address,
       tokens.USDC.address,
       managerWallet,
+      orgId.address,
       {
         from: pmOwner
       }
@@ -140,6 +148,7 @@ contract('PaymentManager', accounts => {
           tokens.LIF.address,
           Math.ceil(Date.now() / 1000) + 300,
           attachment,
+          orgId.organizations[0],
           {
             from: payer
           }
@@ -154,12 +163,28 @@ contract('PaymentManager', accounts => {
       await tokens.LIF.approve(pm.address, amountIn, { from: payer });
       const paymentIndex = await pm.getPaymentsCount();
 
+      await expectRevert(
+        pm.pay(
+          amountUSDC,
+          amountIn,
+          tokens.LIF.address,
+          Math.ceil(Date.now() / 1000) + 300,
+          attachment,
+          orgId.organizations[1],
+          {
+            from: payer
+          }
+        ),
+        'PM: Merchant organization not exists or disabled'
+      );
+
       const receipt = await pm.pay(
         amountUSDC,
         amountIn,
         tokens.LIF.address,
         Math.ceil(Date.now() / 1000) + 300,
         attachment,
+        orgId.organizations[0],
         {
           from: payer
         }
@@ -187,6 +212,7 @@ contract('PaymentManager', accounts => {
       (payment.payer).should.equal(payer);
       (payment.isEther).should.be.false;
       (payment.attachment).should.equal(attachment);
+      (payment.merchant).should.equal(orgId.organizations[0]);
     });
 
     it('should make a payment with stablecoin', async () => {
@@ -199,6 +225,7 @@ contract('PaymentManager', accounts => {
         tokens.USDC.address,
         Math.ceil(Date.now() / 1000) + 300,
         attachment,
+        orgId.organizations[0],
         {
           from: payer
         }
@@ -223,10 +250,25 @@ contract('PaymentManager', accounts => {
       const managerBalanceBefore = await tokens.USDC.balanceOf(managerWallet);
       const paymentIndex = await pm.getPaymentsCount();
 
+      await expectRevert(
+        pm.payETH(
+          amountUSDC,
+          Math.ceil(Date.now() / 1000) + 300,
+          attachment,
+          orgId.organizations[1],
+          {
+            from: payer,
+            value: amountIn
+          }
+        ),
+        'PM: Merchant organization not exists or disabled'
+      );
+
       const receipt = await pm.payETH(
         amountUSDC,
         Math.ceil(Date.now() / 1000) + 300,
         attachment,
+        orgId.organizations[0],
         {
           from: payer,
           value: amountIn
@@ -255,6 +297,7 @@ contract('PaymentManager', accounts => {
       (payment.payer).should.equal(payer);
       (payment.isEther).should.be.true;
       (payment.attachment).should.equal(attachment);
+      (payment.merchant).should.equal(orgId.organizations[0]);
     });
   });
 
@@ -272,6 +315,7 @@ contract('PaymentManager', accounts => {
         tokens.LIF.address,
         Math.ceil(Date.now() / 1000) + 300,
         attachment,
+        orgId.organizations[0],
         {
           from: payer
         }
@@ -360,6 +404,7 @@ contract('PaymentManager', accounts => {
         amountUSDC,
         Math.ceil(Date.now() / 1000) + 300,
         attachment,
+        orgId.organizations[0],
         {
           from: payer,
           value: amountIn
@@ -427,6 +472,7 @@ contract('PaymentManager', accounts => {
         tokens.USDC.address,
         Math.ceil(Date.now() / 1000) + 300,
         attachment,
+        orgId.organizations[0],
         {
           from: payer
         }
