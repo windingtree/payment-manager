@@ -37,7 +37,7 @@ contract PaymentManager is PaymentManagerInterface, ERC165Removable, Initializab
     string attachment; // Textual attachment (eq: offerId, orderId, or URI)
   }
 
-  OrgIdInterface orgId; // OrgId instance
+  OrgIdInterface public orgId; // OrgId instance
   IUniswapV2Router02 public uniswap; // Uniswap instance
   IERC20 public stableCoin; // Stable coin instance
   address public manager;

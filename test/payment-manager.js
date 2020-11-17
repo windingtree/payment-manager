@@ -1,4 +1,5 @@
 const {
+  constants,
   expectEvent,
   expectRevert,
 } = require('@openzeppelin/test-helpers');
@@ -10,7 +11,8 @@ const {
   setupUniswap
 } = require('./utils/uniswap-factory');
 const {
-  setupOrgId
+  setupOrgId,
+  generateHashHelper
 } = require('./utils/orgId');
 const PaymentManager = artifacts.require('PaymentManager');
 
@@ -124,6 +126,158 @@ contract('PaymentManager', accounts => {
         from: pmOwner
       }
     );
+  });
+
+  describe('#changeOrgId(address)', () => {
+    let initialValue;
+    const newValue = constants.ZERO_ADDRESS;
+    before(async () => {
+      initialValue = await pm.orgId();
+    });
+    after(async () => {
+      await pm.changeOrgId(
+        initialValue,
+        {
+          from: pmOwner
+        }
+      );
+    });
+
+    it('should fail if called by wrong account', async () => {
+      await expectRevert(
+        pm.changeOrgId(
+          newValue,
+          {
+            from: payer
+          }
+        ),
+        'PM: Caller is not the manager'
+      );
+    });
+
+    it('should change value', async () => {
+      await pm.changeOrgId(
+        newValue,
+        {
+          from: pmOwner
+        }
+      );
+      (await pm.orgId()).should.equal(newValue);
+    });
+  });
+
+  describe('#changeManager(address)', () => {
+    let initialValue;
+    const newValue = payer;
+    before(async () => {
+      initialValue = await pm.manager();
+    });
+    after(async () => {
+      await pm.changeManager(
+        initialValue,
+        {
+          from: newValue
+        }
+      );
+    });
+
+    it('should fail if called by wrong account', async () => {
+      await expectRevert(
+        pm.changeManager(
+          newValue,
+          {
+            from: payer
+          }
+        ),
+        'PM: Caller is not the manager'
+      );
+    });
+
+    it('should change value', async () => {
+      await pm.changeManager(
+        newValue,
+        {
+          from: pmOwner
+        }
+      );
+      (await pm.manager()).should.equal(newValue);
+    });
+  });
+
+  describe('#changeUniswap(address)', () => {
+    let initialValue;
+    const newValue = constants.ZERO_ADDRESS;
+    before(async () => {
+      initialValue = await pm.uniswap();
+    });
+    after(async () => {
+      await pm.changeUniswap(
+        initialValue,
+        {
+          from: pmOwner
+        }
+      );
+    });
+
+    it('should fail if called by wrong account', async () => {
+      await expectRevert(
+        pm.changeUniswap(
+          newValue,
+          {
+            from: payer
+          }
+        ),
+        'PM: Caller is not the manager'
+      );
+    });
+
+    it('should change value', async () => {
+      await pm.changeUniswap(
+        newValue,
+        {
+          from: pmOwner
+        }
+      );
+      (await pm.uniswap()).should.equal(newValue);
+    });
+  });
+
+  describe('#changeWallet(address)', () => {
+    let initialValue;
+    const newValue = constants.ZERO_ADDRESS;
+    before(async () => {
+      initialValue = await pm.wallet();
+    });
+    after(async () => {
+      await pm.changeWallet(
+        initialValue,
+        {
+          from: pmOwner
+        }
+      );
+    });
+
+    it('should fail if called by wrong account', async () => {
+      await expectRevert(
+        pm.changeWallet(
+          newValue,
+          {
+            from: payer
+          }
+        ),
+        'PM: Caller is not the manager'
+      );
+    });
+
+    it('should change value', async () => {
+      await pm.changeWallet(
+        newValue,
+        {
+          from: pmOwner
+        }
+      );
+      (await pm.wallet()).should.equal(newValue);
+    });
   });
 
   describe('#getAmountIn(uint256,address)', () => {
