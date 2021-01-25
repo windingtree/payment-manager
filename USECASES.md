@@ -14,7 +14,7 @@ In order to deploy an instance of the PaymentManager we use [smart contract tool
 Deployment command:
 
 ```bash
-npx tools --network <network> cmd=deploy name=PaymentManager from=<owner_address> initMethod=initialize initArgs=<manager_address>,<uniswap_router_address>,<stablecoin_address>,<wallet_address>
+npx tools --network <network> cmd=deploy name=PaymentManager from=<owner_address> initMethod=initialize initArgs=<manager_address>,<uniswap_router_address>,<stablecoin_address>,<wallet_address>,<orgid_address>
 ```
 
 Three smart contracts are deployed as a result:
